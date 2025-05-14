@@ -15,6 +15,7 @@ import RemarketingTools from './pages/RemarketingTools';
 import RemarketingDashboard from './components/remarketing/RemarketingDashboard';
 import CampaignCreator from './components/remarketing/CampaignCreator';
 import TrackingPixel from './components/tracking/TrackingPixel';
+import TrackingScriptGenerator from './components/tracking/TrackingScriptGenerator';
 import ConsentBanner from './components/tracking/ConsentBanner';
 
 // Context
@@ -23,7 +24,7 @@ import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import Profile from './pages/Profile';
 import ForgotPassword from './pages/ForgotPassword';
-import PrivateRoute from './components/PrivateRoute'; // Import PrivateRoute
+import PrivateRoute from './components/PrivateRoute';
 
 function App() {
   return (
@@ -60,6 +61,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <CookieManager />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/tracking/script"
+              element={
+                <PrivateRoute>
+                  <TrackingScriptGenerator />
                 </PrivateRoute>
               }
             />
