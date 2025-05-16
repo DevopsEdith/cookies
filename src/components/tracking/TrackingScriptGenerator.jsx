@@ -26,23 +26,36 @@ const TrackingScriptGenerator = () => {
   };
 
   // Fonction d'envoi des données
-  function sendData(eventType, data) {
-    const payload = {
-      trackingId: config.trackingId,
-      timestamp: new Date().toISOString(),
-      eventType,
-      data
-    };
+  async function sendData(eventType, data) {
+    try {
+      const payload = {
+        trackingId: config.trackingId,
+        timestamp: new Date().toISOString(),
+        eventType,
+        data
+      };
 
-    fetch(config.apiEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload)
-    }).catch(err => {
-      if (config.debug) console.error('Erreur d\'envoi:', err);
-    });
+      const response = await fetch(config.apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        throw new Error(\`HTTP error! status: \${response.status}\`);
+      }
+
+      const result = await response.json();
+      return result;
+    } catch (err) {
+      if (config.debug) {
+        console.error('Erreur lors de l\'envoi des données:', err.message);
+      }
+      // Vous pouvez également implémenter une logique de retry ici si nécessaire
+      return null;
+    }
   }
 
   // Suivi des vues de pages
