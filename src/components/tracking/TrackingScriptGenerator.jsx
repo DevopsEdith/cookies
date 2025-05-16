@@ -7,7 +7,6 @@ const TrackingScriptGenerator = () => {
   const { cookieData } = useCookieData();
 
   useEffect(() => {
-    // Générer un ID de tracking unique
     setTrackingId(`track_${Math.random().toString(36).substr(2, 9)}`);
   }, []);
 
@@ -19,54 +18,82 @@ const TrackingScriptGenerator = () => {
   w.CookieTracker = w.CookieTracker || {};
   w.CookieTracker.q = w.CookieTracker.q || [];
   
-  var script = d.createElement('script');
-  script.async = true;
-  script.src = 'https://your-domain.com/tracker.js';
-  script.id = id;
-  
-  var first = d.getElementsByTagName('script')[0];
-  first.parentNode.insertBefore(script, first);
-  
-  function track(event, data) {
-    w.CookieTracker.q.push({
-      event: event,
-      data: data,
+  // Configuration
+  const config = {
+    trackingId: '${trackingId}',
+    apiEndpoint: 'https://votre-api.com/tracking',
+    debug: false
+  };
+
+  // Fonction d'envoi des données
+  function sendData(eventType, data) {
+    const payload = {
+      trackingId: config.trackingId,
       timestamp: new Date().toISOString(),
-      trackingId: '${trackingId}'
+      eventType,
+      data
+    };
+
+    fetch(config.apiEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload)
+    }).catch(err => {
+      if (config.debug) console.error('Erreur d\'envoi:', err);
     });
   }
-  
-  // Événements de base
+
+  // Suivi des vues de pages
   d.addEventListener('DOMContentLoaded', function() {
-    track('pageview', { 
+    sendData('pageview', { 
       url: w.location.href,
-      title: d.title 
+      title: d.title,
+      referrer: d.referrer
     });
   });
-  
+
   // Suivi des clics sur les produits
   d.addEventListener('click', function(e) {
-    if(e.target.matches('.product-link, .add-to-cart')) {
-      track('product_click', {
-        productId: e.target.dataset.productId,
-        productName: e.target.dataset.productName,
-        price: e.target.dataset.price
+    const productElement = e.target.closest('[data-product-id]');
+    if (productElement) {
+      sendData('product_click', {
+        productId: productElement.dataset.productId,
+        productName: productElement.dataset.productName,
+        price: productElement.dataset.price,
+        category: productElement.dataset.category
       });
     }
   });
-  
-  // Suivi du panier abandonné
+
+  // Suivi des ajouts au panier
+  w.addEventListener('add_to_cart', function(e) {
+    sendData('add_to_cart', e.detail);
+  });
+
+  // Suivi des paniers abandonnés
   w.addEventListener('beforeunload', function() {
     const cart = localStorage.getItem('cart');
-    if(cart) {
-      track('cart_abandoned', {
-        items: JSON.parse(cart)
+    if (cart) {
+      sendData('cart_abandoned', {
+        items: JSON.parse(cart),
+        totalValue: calculateCartTotal(JSON.parse(cart))
       });
     }
   });
+
+  // Suivi des achats
+  w.addEventListener('purchase_complete', function(e) {
+    sendData('purchase', e.detail);
+  });
+
+  function calculateCartTotal(cart) {
+    return cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+  }
+
 })(window, document, 'script', '${trackingId}');
-</script>
-`;
+</script>`;
 
     setScriptCode(code);
   }, [trackingId]);
@@ -101,22 +128,28 @@ const TrackingScriptGenerator = () => {
       </div>
       
       <div className="mt-6 bg-blue-50 border-l-4 border-blue-500 p-4">
-        <h3 className="text-lg font-medium text-blue-800">Instructions d'installation</h3>
+        <h3 className="text-lg font-medium text-blue-800">Instructions d'intégration</h3>
         <ol className="mt-2 list-decimal list-inside text-blue-700">
           <li>Copiez le script ci-dessus</li>
           <li>Collez-le juste avant la fermeture de la balise &lt;/head&gt; de votre site</li>
-          <li>Ajoutez les classes CSS suivantes à vos éléments :
-            <ul className="ml-6 mt-2 list-disc">
-              <li><code className="bg-blue-100 px-2 py-1 rounded">.product-link</code> pour les liens de produits</li>
-              <li><code className="bg-blue-100 px-2 py-1 rounded">.add-to-cart</code> pour les boutons d'ajout au panier</li>
-            </ul>
-          </li>
-          <li>Ajoutez les attributs data suivants à vos éléments :
+          <li>Ajoutez les attributs data suivants à vos éléments de produits :
             <ul className="ml-6 mt-2 list-disc">
               <li><code className="bg-blue-100 px-2 py-1 rounded">data-product-id</code></li>
               <li><code className="bg-blue-100 px-2 py-1 rounded">data-product-name</code></li>
               <li><code className="bg-blue-100 px-2 py-1 rounded">data-price</code></li>
+              <li><code className="bg-blue-100 px-2 py-1 rounded">data-category</code></li>
             </ul>
+          </li>
+          <li>Pour suivre les achats, déclenchez l'événement 'purchase_complete' :
+            <pre className="bg-blue-100 p-2 mt-2 rounded">
+              {`window.dispatchEvent(new CustomEvent('purchase_complete', {
+  detail: {
+    orderId: '123',
+    items: [...],
+    total: 99.99
+  }
+}));`}
+            </pre>
           </li>
         </ol>
       </div>
