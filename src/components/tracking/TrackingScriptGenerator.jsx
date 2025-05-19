@@ -21,7 +21,7 @@ const TrackingScriptGenerator = () => {
   // Configuration
   const config = {
     trackingId: '${trackingId}',
-    apiEndpoint: 'https://votre-api.com/tracking',
+    apiEndpoint: 'http://localhost:8080/api/track',
     debug: false
   };
 
@@ -30,9 +30,10 @@ const TrackingScriptGenerator = () => {
     try {
       const payload = {
         trackingId: config.trackingId,
-        timestamp: new Date().toISOString(),
         eventType,
-        data
+        eventData: JSON.stringify(data),
+        sessionId: localStorage.getItem('sessionId') || Math.random().toString(36).substring(2),
+        timestamp: new Date().toISOString()
       };
 
       const response = await fetch(config.apiEndpoint, {
@@ -47,16 +48,17 @@ const TrackingScriptGenerator = () => {
         throw new Error(\`HTTP error! status: \${response.status}\`);
       }
 
-      const result = await response.json();
-      return result;
+      return await response.json();
     } catch (err) {
       if (config.debug) {
-        console.error('Erreur lors de l\'envoi des données:', err.message);
+        console.error('Erreur lors de l\\'envoi des données:', err.message);
       }
-      // Vous pouvez également implémenter une logique de retry ici si nécessaire
       return null;
     }
   }
+
+  // Initialisation
+  localStorage.setItem('sessionId', localStorage.getItem('sessionId') || Math.random().toString(36).substring(2));
 
   // Suivi des vues de pages
   d.addEventListener('DOMContentLoaded', function() {

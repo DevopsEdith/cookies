@@ -1,126 +1,80 @@
 // src/services/cookieService.js
 
-// ============================
-// 1. Données simulées
-// ============================
+const API_URL = 'http://localhost:8080/api';
 
-// Cookies simulés
-const mockCookies = [
-  {
-    id: '1',
-    user: 'John Doe',
-    accepted: true,
-    date: '2025-04-01',
-  },
-  {
-    id: '2',
-    user: 'Jane Smith',
-    accepted: false,
-    date: '2025-04-05',
-  },
-];
-
-// Statistiques simulées
-const mockStats = {
-  week: {
-    accepted: 120,
-    rejected: 30,
-    total: 150,
-  },
-  month: {
-    accepted: 400,
-    rejected: 120,
-    total: 520,
-  },
+// Fonction pour envoyer les données de tracking
+const sendTrackingData = async (eventType, data) => {
+  try {
+    const response = await fetch(`${API_URL}/track`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        trackingId: localStorage.getItem('trackingId') || 'anonymous',
+        eventType,
+        eventData: JSON.stringify(data),
+        sessionId: localStorage.getItem('sessionId')
+      })
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur lors de l\'envoi des données:', error);
+    throw error;
+  }
 };
-
-// Paniers abandonnés simulés
-const mockAbandonedCarts = [
-  {
-    id: 'c1',
-    user: 'John Doe',
-    items: 3,
-    total: 45.99,
-    date: '2025-04-10',
-  },
-  {
-    id: 'c2',
-    user: 'Alice Wonder',
-    items: 2,
-    total: 28.50,
-    date: '2025-04-11',
-  },
-];
-
-// Données de remarketing simulées
-const mockRemarketingData = [
-  {
-    campaign: 'Spring Sale',
-    views: 500,
-    clicks: 120,
-    conversions: 15,
-  },
-  {
-    campaign: 'Abandoned Cart Recovery',
-    views: 300,
-    clicks: 80,
-    conversions: 12,
-  },
-];
-
-// ============================
-// 2. Fonction utilitaire de délai
-// ============================
-
-const simulateDelay = (data, delay = 500) =>
-  new Promise((resolve) => setTimeout(() => resolve(structuredClone(data)), delay));
-
-// ============================
-// 3. Fonctions exportées
-// ============================
 
 // Récupérer toutes les données de cookies
-export const fetchCookieData = () => simulateDelay(mockCookies);
-
-// Mettre à jour un cookie existant
-export const updateCookieData = (newData) => {
-  const index = mockCookies.findIndex((c) => c.id === newData.id);
-  if (index !== -1) {
-    mockCookies[index] = { ...mockCookies[index], ...newData };
-  } else {
-    console.warn(`Cookie avec l'id ${newData.id} non trouvé.`);
+export const fetchCookieData = async () => {
+  try {
+    const response = await fetch(`${API_URL}/track/events`);
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur lors de la récupération des données:', error);
+    throw error;
   }
-  return simulateDelay(mockCookies);
 };
 
-// Récupérer les statistiques (par semaine ou mois)
-export const fetchCookieStats = (timeframe = 'week') =>
-  simulateDelay(mockStats[timeframe] || mockStats.week);
+// Mettre à jour un cookie existant
+export const updateCookieData = async (newData) => {
+  try {
+    await sendTrackingData('cookie_update', newData);
+    return true;
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour:', error);
+    return false;
+  }
+};
 
-
+// Récupérer les statistiques
+export const fetchCookieStats = async (timeframe = 'week') => {
+  try {
+    const response = await fetch(`${API_URL}/track/stats?timeframe=${timeframe}`);
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur lors de la récupération des statistiques:', error);
+    throw error;
+  }
+};
 
 // Récupérer les données de remarketing
-export const fetchRemarketingData = () => simulateDelay(mockRemarketingData);
-const mockAbandonedCartsDetailed = [
-  {
-    id: 'c1',
-    userId: 'John Doe',
-    abandonedAt: '2025-04-10T14:00:00Z',
-    items: [
-      { id: 'prod1', quantity: 2, price: 10.00 },
-      { id: 'prod2', quantity: 1, price: 25.99 },
-    ],
-    reminderSent: true,
-  },
-  {
-    id: 'c2',
-    userId: 'Alice Wonder',
-    abandonedAt: '2025-04-11T09:30:00Z',
-    items: [
-      { id: 'prod3', quantity: 2, price: 14.25 },
-    ],
-    reminderSent: false,
-  },
-];
+export const fetchRemarketingData = async () => {
+  try {
+    const response = await fetch(`${API_URL}/track/remarketing`);
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur lors de la récupération des données de remarketing:', error);
+    throw error;
+  }
+};
 
-export const fetchAbandonedCarts = () => simulateDelay(mockAbandonedCartsDetailed);
+// Récupérer les paniers abandonnés
+export const fetchAbandonedCarts = async () => {
+  try {
+    const response = await fetch(`${API_URL}/track/abandoned-carts`);
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur lors de la récupération des paniers abandonnés:', error);
+    throw error;
+  }
+};
